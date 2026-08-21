@@ -6,11 +6,18 @@
       "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "start_url": "./index.html",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "start_url": "/road-pad/",
+  "scope": "/road-pad/",
+  "background_color": "#141821",
+  "theme_color": "#141821",
   "display": "standalone"
 }
