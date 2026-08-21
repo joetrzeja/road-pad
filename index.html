@@ -4,33 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Road Pad Clone</title>
+  
+  <!-- App Icon and Progressive Web App Settings -->
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Road Pad">
-  
+  <meta name="theme-color" content="#ffffff">
+
   <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; background-color: #fff; }
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
-    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.95); padding: 8px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); max-width: 90vw; align-items: center; }
-    .btn { padding: 8px 10px; border: none; background: #007bff; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.98); padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); max-width: 90vw; align-items: center; border: 1px solid #e0e0e0; }
+    .btn { padding: 9px 12px; border: none; background: #007bff; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
     .btn-locate { background: #28a745; }
     .btn-reset { background: #6c757d; }
     
     /* Color Swatch Buttons */
-    .color-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.5); cursor: pointer; padding: 0; }
-    .color-btn.selected { border: 3px solid #000; transform: scale(1.1); }
+    .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.4); cursor: pointer; padding: 0; transition: transform 0.1s ease; }
+    .color-btn.selected { border: 4px solid #000; transform: scale(1.1); box-shadow: 0 0 6px rgba(0,0,0,0.6); }
+    .color-btn:active { transform: scale(0.95); }
     
-    .rotate-container { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: bold; }
-    .rotate-container input { width: 80px; }
+    .rotate-container { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; padding: 0 4px; }
+    .rotate-container input { width: 90px; height: 20px; }
   </style>
 </head>
 <body>
@@ -64,9 +69,12 @@
     // Initialize Rotatable Satellite Map
     const map = L.map('map', {
       rotate: true,
-      touchRotate: true, // Enables two-finger pinch-rotate gestures on touchscreens
-      bearing: 0
+      touchRotate: true,
+      bearing: 0,
+      zoomControl: false // Moved standard zoom for visual clarity
     }).setView([51.7356, 0.4685], 18);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri'
@@ -74,7 +82,7 @@
 
     let userMarker = null;
 
-    // Location Tracking
+    // Geolocation with higher accuracy settings
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -84,7 +92,7 @@
             
             if (userMarker) map.removeLayer(userMarker);
             userMarker = L.circleMarker([latitude, longitude], {
-              radius: 8,
+              radius: 9,
               fillColor: "#007bff",
               color: "#ffffff",
               weight: 3,
@@ -93,14 +101,14 @@
             }).addTo(map);
           },
           () => {
-            alert('Unable to retrieve location. Please check location permissions.');
+            alert('Unable to retrieve position. Please check location permissions in Chrome.');
           },
-          { enableHighAccuracy: true }
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       }
     });
 
-    // Rotation Control Logic
+    // Rotation Controls
     const rotateSlider = document.getElementById('rotate-slider');
     const resetNorthBtn = document.getElementById('reset-north');
 
@@ -117,7 +125,7 @@
       rotateSlider.value = map.getBearing();
     });
 
-    // Drawing Canvas Logic
+    // Drawing Canvas
     const canvas = document.getElementById('draw-canvas');
     const ctx = canvas.getContext('2d');
     let isDrawingMode = false;
@@ -159,21 +167,25 @@
 
     document.getElementById('clear-draw').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Drawing Event Logic (optimized for mobile touch)
     function startPosition(e) {
       if (!isDrawingMode) return;
       isPainting = true;
+      ctx.beginPath(); // Start fresh path for each stroke
       draw(e);
     }
     function finishedPosition() {
+      if (!isPainting) return;
       isPainting = false;
-      ctx.beginPath();
     }
     function draw(e) {
       if (!isPainting || !isDrawingMode) return;
-      const x = e.touches ? e.touches[0].clientX : e.clientX;
-      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
 
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 6; // slightly thicker for mobile
       ctx.lineCap = 'round';
       ctx.strokeStyle = currentColor;
 
@@ -186,9 +198,9 @@
     canvas.addEventListener('mousedown', startPosition);
     canvas.addEventListener('mouseup', finishedPosition);
     canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); }); // prevents scrolling while drawing
     canvas.addEventListener('touchend', finishedPosition);
-    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
   </script>
 </body>
 </html>
