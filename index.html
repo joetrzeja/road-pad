@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Instructor Road Pad Clone</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Road Pad">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+    #map { height: 100vh; width: 100vw; z-index: 1; }
+    #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
+    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 8px; display: flex; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .btn { padding: 8px 12px; border: none; background: #007bff; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .btn.active { background: #0056b3; }
+    .btn-danger { background: #dc3545; }
+    .btn-locate { background: #28a745; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button id="locate-me" class="btn btn-locate">📍 Location</button>
+    <button id="toggle-draw" class="btn">✏️ Draw: OFF</button>
+    <button id="color-red" class="btn" style="background: red;">Red</button>
+    <button id="color-blue" class="btn" style="background: blue;">Blue</button>
+    <button id="clear-draw" class="btn btn-danger">Clear Lines</button>
+  </div>
+
+  <div id="map"></div>
+  <canvas id="draw-canvas"></canvas>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([51.7356, 0.4685], 18);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    }).addTo(map);
+
+    let userMarker = null;
+
+    document.getElementById('locate-me').addEventListener('click', () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            map.setView([latitude, longitude], 19);
+            
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.circleMarker([latitude, longitude], {
+              radius: 8,
+              fillColor: "#007bff",
+              color: "#ffffff",
+              weight: 3,
+              opacity: 1,
+              fillOpacity: 0.9
+            }).addTo(map);
+          },
+          (error) => {
+            alert('Unable to retrieve location. Please allow location permissions in Chrome.');
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        alert('Geolocation is not supported by your device.');
+      }
+    });
+
+    const canvas = document.getElementById('draw-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawingMode = false;
+    let isPainting = false;
+    let currentColor = 'red';
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const drawBtn = document.getElementById('toggle-draw');
+    drawBtn.addEventListener('click', () => {
+      isDrawingMode = !isDrawingMode;
+      canvas.style.pointerEvents = isDrawingMode ? 'auto' : 'none';
+      drawBtn.innerText = isDrawingMode ? '✏️ Draw: ON' : '✏️ Draw: OFF';
+      drawBtn.classList.toggle('active', isDrawingMode);
+      if (isDrawingMode) map.dragging.disable();
+      else map.dragging.enable();
+    });
+
+    document.getElementById('color-red').onclick = () => currentColor = 'red';
+    document.getElementById('color-blue').onclick = () => currentColor = 'blue';
+    document.getElementById('clear-draw').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    function startPosition(e) {
+      if (!isDrawingMode) return;
+      isPainting = true;
+      draw(e);
+    }
+    function finishedPosition() {
+      isPainting = false;
+      ctx.beginPath();
+    }
+    function draw(e) {
+      if (!isPainting || !isDrawingMode) return;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = currentColor;
+
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('mouseup', finishedPosition);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('touchend', finishedPosition);
+    canvas.addEventListener('touchmove', draw);
+  </script>
+</body>
+</html>
