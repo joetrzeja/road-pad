@@ -13,11 +13,15 @@
     body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
-    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 8px; display: flex; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-    .btn { padding: 8px 12px; border: none; background: #007bff; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.95); padding: 8px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); max-width: 90vw; }
+    .btn { padding: 8px 10px; border: none; background: #007bff; color: white; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
     .btn-locate { background: #28a745; }
+    
+    /* Color Swatch Buttons */
+    .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.5); cursor: pointer; padding: 0; }
+    .color-btn.selected { border: 3px solid #000; transform: scale(1.1); }
   </style>
 </head>
 <body>
@@ -25,9 +29,17 @@
   <div class="toolbar">
     <button id="locate-me" class="btn btn-locate">📍 Location</button>
     <button id="toggle-draw" class="btn">✏️ Draw: OFF</button>
-    <button id="color-red" class="btn" style="background: red;">Red</button>
-    <button id="color-blue" class="btn" style="background: blue;">Blue</button>
-    <button id="clear-draw" class="btn btn-danger">Clear Lines</button>
+    
+    <!-- Color Palette -->
+    <button class="color-btn selected" style="background: red;" data-color="red"></button>
+    <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
+    <button class="color-btn" style="background: #00cc44;" data-color="#00cc44"></button>
+    <button class="color-btn" style="background: #ffcc00;" data-color="#ffcc00"></button>
+    <button class="color-btn" style="background: #ff6600;" data-color="#ff6600"></button>
+    <button class="color-btn" style="background: #9933ff;" data-color="#9933ff"></button>
+    <button class="color-btn" style="background: #000000;" data-color="#000000"></button>
+
+    <button id="clear-draw" class="btn btn-danger">Clear</button>
   </div>
 
   <div id="map"></div>
@@ -59,7 +71,7 @@
               fillOpacity: 0.9
             }).addTo(map);
           },
-          (error) => {
+          () => {
             alert('Unable to retrieve location. Please allow location permissions in Chrome.');
           },
           { enableHighAccuracy: true }
@@ -92,8 +104,16 @@
       else map.dragging.enable();
     });
 
-    document.getElementById('color-red').onclick = () => currentColor = 'red';
-    document.getElementById('color-blue').onclick = () => currentColor = 'blue';
+    // Color Selector Event Listener
+    const colorButtons = document.querySelectorAll('.color-btn');
+    colorButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        colorButtons.forEach(b => b.classList.remove('selected'));
+        e.target.classList.add('selected');
+        currentColor = e.target.getAttribute('data-color');
+      });
+    });
+
     document.getElementById('clear-draw').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     function startPosition(e) {
@@ -129,3 +149,6 @@
   </script>
 </body>
 </html>
+           
+
+      
