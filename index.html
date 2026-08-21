@@ -39,68 +39,71 @@
     .rotate-container { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; padding: 0 4px; }
     .rotate-container input { width: 90px; height: 20px; }
 
-    /* Rotatable Car Wrapper */
+    /* Rotatable Car Marker Styles */
+    .custom-car-marker {
+      background: transparent !important;
+      border: none !important;
+    }
+
     .car-container {
       position: relative;
-      width: 40px;
-      height: 90px;
+      width: 50px;
+      height: 100px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: center;
     }
     
     .car-svg-wrapper {
       width: 28px;
       height: 48px;
       transform-origin: center center;
-      transition: transform 0.05s linear;
     }
 
     /* Rotation Handle Arm */
     .rotate-arm {
       display: none;
       position: absolute;
-      top: 0px;
+      top: -20px;
       width: 2px;
-      height: 32px;
+      height: 25px;
       background: #007bff;
-      align-items: center;
-      justify-content: center;
+      z-index: 1000;
     }
 
     .rotate-handle {
       position: absolute;
       top: -12px;
+      left: -9px;
       width: 20px;
       height: 20px;
       background: #007bff;
       border: 2px solid #ffffff;
       border-radius: 50%;
       box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-      cursor: grab;
+      touch-action: none;
     }
 
     /* Pin Toggle Button */
     .pin-btn {
       display: none;
       position: absolute;
-      bottom: -22px;
-      background: rgba(0, 0, 0, 0.8);
+      bottom: -15px;
+      background: rgba(0, 0, 0, 0.85);
       color: #fff;
-      border: none;
+      border: 1px solid #fff;
       border-radius: 10px;
-      padding: 2px 6px;
+      padding: 2px 8px;
       font-size: 11px;
       font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
       white-space: nowrap;
+      z-index: 1000;
     }
 
     .car-container.selected .rotate-arm,
     .car-container.selected .pin-btn {
-      display: flex;
+      display: block !important;
     }
 
     .car-container.pinned .rotate-arm {
@@ -143,20 +146,19 @@
       touchRotate: true,
       bearing: 0,
       zoomControl: false,
-      maxZoom: 22
+      maxZoom: 21
     }).setView([51.7356, 0.4685], 18);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 22,
-      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-      attribution: 'Map imagery &copy; Google'
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri',
+      maxNativeZoom: 19,
+      maxZoom: 21
     }).addTo(map);
 
     let userMarker = null;
     let carMarkers = [];
-    let selectedCar = null;
 
     // GPS Geolocation
     document.getElementById('locate-me').addEventListener('click', () => {
@@ -220,8 +222,8 @@
       const customIcon = L.divIcon({
         html: getTopDownCarHTML(color),
         className: 'custom-car-marker',
-        iconSize: [40, 90],
-        iconAnchor: [20, 66]
+        iconSize: [50, 100],
+        iconAnchor: [25, 50]
       });
 
       const center = map.getCenter();
@@ -233,25 +235,8 @@
       car.carRotation = 0;
       car.isPinned = false;
 
-      // Handle selection and rotation arm logic
-      car.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        deselectAllCars();
-        selectedCar = car;
-        
-        const el = car.getElement();
-        if (!el) return;
-        const container = el.querySelector('.car-container');
-        container.classList.add('selected');
-
-        setupCarControls(car, container);
-      });
-
-      // Double tap to remove
-      car.on('dblclick', () => {
-        map.removeLayer(car);
-        carMarkers = carMarkers.filter(c => c !== car);
-      });
+      // Enable touch interaction on marker creation
+      setTimeout(() => attachCarEvents(car), 100);
 
       carMarkers.push(car);
     });
@@ -264,18 +249,28 @@
           if (container) container.classList.remove('selected');
         }
       });
-      selectedCar = null;
     }
 
     map.on('click', () => deselectAllCars());
 
-    function setupCarControls(car, container) {
-      const handle = container.querySelector('.rotate-handle');
-      const carWrapper = container.querySelector('.car-svg-wrapper');
-      const pinBtn = container.querySelector('.pin-btn');
+    function attachCarEvents(car) {
+      const el = car.getElement();
+      if (!el) return;
 
-      // Pin Toggle Handler
-      pinBtn.onclick = (e) => {
+      const container = el.querySelector('.car-container');
+      const handle = el.querySelector('.rotate-handle');
+      const wrapper = el.querySelector('.car-svg-wrapper');
+      const pinBtn = el.querySelector('.pin-btn');
+
+      // Select Car on Click/Tap
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deselectAllCars();
+        container.classList.add('selected');
+      });
+
+      // Pin / Unpin Button
+      pinBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         car.isPinned = !car.isPinned;
         if (car.isPinned) {
@@ -287,14 +282,15 @@
           container.classList.remove('pinned');
           pinBtn.innerText = '📌 Pin';
         }
-      };
+      });
 
-      // Rotation Dragging Handler
+      // Handle Rotation Drag
       let isRotating = false;
 
       const startRotate = (e) => {
         if (car.isPinned) return;
         e.stopPropagation();
+        e.preventDefault();
         isRotating = true;
         map.dragging.disable();
       };
@@ -303,7 +299,7 @@
         if (!isRotating) return;
         e.stopPropagation();
 
-        const rect = carWrapper.getBoundingClientRect();
+        const rect = wrapper.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
 
@@ -314,10 +310,10 @@
         let degrees = Math.round(radians * (180 / Math.PI));
 
         car.carRotation = degrees;
-        carWrapper.style.transform = `rotate(${degrees}deg)`;
+        wrapper.style.transform = `rotate(${degrees}deg)`;
       };
 
-      const stopRotate = () => {
+      const stopRotate = (e) => {
         if (isRotating) {
           isRotating = false;
           if (!isDrawingMode && !car.isPinned) map.dragging.enable();
@@ -332,6 +328,13 @@
 
       window.addEventListener('mouseup', stopRotate);
       window.addEventListener('touchend', stopRotate);
+
+      // Double Click/Tap to Delete Car
+      el.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        map.removeLayer(car);
+        carMarkers = carMarkers.filter(c => c !== car);
+      });
     }
 
     // Map Orientation Controls
