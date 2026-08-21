@@ -67,29 +67,33 @@
   <canvas id="draw-canvas"></canvas>
 
   <script>
-    // Initialize Rotatable Satellite Map
+    // Initialize Rotatable Satellite Map with Increased Max Zoom (21)
     const map = L.map('map', {
       rotate: true,
       touchRotate: true,
       bearing: 0,
-      zoomControl: false
+      zoomControl: false,
+      maxZoom: 21
     }).setView([51.7356, 0.4685], 18);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+    // Esri World Imagery with smooth upscaling up to level 21
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri'
+      attribution: 'Tiles &copy; Esri',
+      maxNativeZoom: 19,
+      maxZoom: 21
     }).addTo(map);
 
     let userMarker = null;
 
-    // GPS Geolocation
+    // GPS Geolocation (Centers at max close-up zoom 20)
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
-            map.setView([latitude, longitude], 19);
+            map.setView([latitude, longitude], 20);
             
             if (userMarker) map.removeLayer(userMarker);
             userMarker = L.circleMarker([latitude, longitude], {
