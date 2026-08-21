@@ -29,6 +29,7 @@
     .btn-danger { background: #dc3545; }
     .btn-locate { background: #28a745; }
     .btn-reset { background: #6c757d; }
+    .btn-car { background: #17a2b8; color: #fff; }
     
     /* Color Swatch Buttons */
     .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.4); cursor: pointer; padding: 0; transition: transform 0.1s ease; }
@@ -37,6 +38,14 @@
     
     .rotate-container { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; padding: 0 4px; }
     .rotate-container input { width: 90px; height: 20px; }
+
+    /* Top-Down Aerial Car Marker Styling */
+    .draggable-car {
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -44,6 +53,7 @@
   <div class="toolbar">
     <button id="locate-me" class="btn btn-locate">📍 Location</button>
     <button id="toggle-draw" class="btn">✏️ Draw: OFF</button>
+    <button id="add-car" class="btn btn-car">🚘 +Car</button>
     
     <!-- 7 Color Palette -->
     <button class="color-btn selected" style="background: red;" data-color="red"></button>
@@ -67,7 +77,7 @@
   <canvas id="draw-canvas"></canvas>
 
   <script>
-    // Initialize Rotatable Satellite Map with Increased Max Zoom (21)
+    // Initialize Rotatable Satellite Map
     const map = L.map('map', {
       rotate: true,
       touchRotate: true,
@@ -78,7 +88,6 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Esri World Imagery with smooth upscaling up to level 21
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri',
       maxNativeZoom: 19,
@@ -86,8 +95,9 @@
     }).addTo(map);
 
     let userMarker = null;
+    let carMarkers = [];
 
-    // GPS Geolocation (Centers at max close-up zoom 20)
+    // GPS Geolocation
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -113,7 +123,67 @@
       }
     });
 
-    // Map Orientation / Rotation Controls
+    // Multi-Color Top-Down Bird's-Eye SVG Generator
+    const carColors = ['#e63946', '#0066ff', '#2a9d8f', '#e9c46a', '#f4a261', '#9b5de5', '#2b2d42'];
+    let carColorIndex = 0;
+
+    function getTopDownCarSVG(color) {
+      return `
+        <svg viewBox="0 0 40 70" width="24" height="42" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.7));">
+          <!-- Main Chassis Body -->
+          <rect x="4" y="2" width="32" height="66" rx="9" fill="${color}" stroke="#111" stroke-width="2"/>
+          
+          <!-- Front Windscreen -->
+          <path d="M 8 18 Q 20 12 32 18 L 30 26 Q 20 22 10 26 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
+          
+          <!-- Rear Screen -->
+          <path d="M 10 50 Q 20 53 30 50 L 29 56 Q 20 58 11 56 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
+          
+          <!-- Roof Top -->
+          <rect x="9" y="26" width="22" height="24" rx="4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
+          
+          <!-- Side Mirrors -->
+          <rect x="1" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
+          <rect x="36" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
+          
+          <!-- Front Headlights -->
+          <rect x="6" y="3" width="6" height="3" rx="1" fill="#ffffff"/>
+          <rect x="28" y="3" width="6" height="3" rx="1" fill="#ffffff"/>
+          
+          <!-- Rear Brake Lights -->
+          <rect x="6" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
+          <rect x="28" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
+        </svg>
+      `;
+    }
+
+    document.getElementById('add-car').addEventListener('click', () => {
+      const color = carColors[carColorIndex % carColors.length];
+      carColorIndex++;
+
+      const customIcon = L.divIcon({
+        html: getTopDownCarSVG(color),
+        className: 'draggable-car',
+        iconSize: [24, 42],
+        iconAnchor: [12, 21]
+      });
+
+      const center = map.getCenter();
+      const car = L.marker(center, {
+        icon: customIcon,
+        draggable: true
+      }).addTo(map);
+
+      // Double tap to remove
+      car.on('dblclick', () => {
+        map.removeLayer(car);
+        carMarkers = carMarkers.filter(c => c !== car);
+      });
+
+      carMarkers.push(car);
+    });
+
+    // Map Orientation Controls
     const rotateSlider = document.getElementById('rotate-slider');
     const resetNorthBtn = document.getElementById('reset-north');
 
@@ -154,9 +224,11 @@
       if (isDrawingMode) {
         map.dragging.disable();
         map.touchRotate.disable();
+        carMarkers.forEach(c => c.dragging.disable());
       } else {
         map.dragging.enable();
         map.touchRotate.enable();
+        carMarkers.forEach(c => c.dragging.enable());
       }
     });
 
@@ -170,7 +242,13 @@
       });
     });
 
-    document.getElementById('clear-draw').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear canvas and remove all added cars
+    document.getElementById('clear-draw').onclick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      carMarkers.forEach(c => map.removeLayer(c));
+      carMarkers = [];
+      carColorIndex = 0;
+    };
 
     // Touch Drawing Handlers
     function startPosition(e) {
