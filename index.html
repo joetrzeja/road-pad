@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Instructor Road Pad Clone</title>
+  <title>Road Pad Instructor</title>
   
-  <!-- App Icon and Progressive Web App Settings -->
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
+  <!-- App Icon & PWA Web Manifest Links -->
+  <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
+  <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Road Pad">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#141821">
 
   <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -19,10 +20,10 @@
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; background-color: #fff; }
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; background-color: #141821; }
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
-    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.98); padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); max-width: 90vw; align-items: center; border: 1px solid #e0e0e0; }
+    .toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(255,255,255,0.98); padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 90vw; align-items: center; border: 1px solid #e0e0e0; }
     .btn { padding: 9px 12px; border: none; background: #007bff; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
@@ -44,7 +45,7 @@
     <button id="locate-me" class="btn btn-locate">📍 Location</button>
     <button id="toggle-draw" class="btn">✏️ Draw: OFF</button>
     
-    <!-- Color Palette -->
+    <!-- 7 Color Palette -->
     <button class="color-btn selected" style="background: red;" data-color="red"></button>
     <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
     <button class="color-btn" style="background: #00cc44;" data-color="#00cc44"></button>
@@ -71,7 +72,7 @@
       rotate: true,
       touchRotate: true,
       bearing: 0,
-      zoomControl: false // Moved standard zoom for visual clarity
+      zoomControl: false
     }).setView([51.7356, 0.4685], 18);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -82,7 +83,7 @@
 
     let userMarker = null;
 
-    // Geolocation with higher accuracy settings
+    // GPS Geolocation
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -108,7 +109,7 @@
       }
     });
 
-    // Rotation Controls
+    // Map Orientation / Rotation Controls
     const rotateSlider = document.getElementById('rotate-slider');
     const resetNorthBtn = document.getElementById('reset-north');
 
@@ -167,11 +168,11 @@
 
     document.getElementById('clear-draw').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Drawing Event Logic (optimized for mobile touch)
+    // Touch Drawing Handlers
     function startPosition(e) {
       if (!isDrawingMode) return;
       isPainting = true;
-      ctx.beginPath(); // Start fresh path for each stroke
+      ctx.beginPath();
       draw(e);
     }
     function finishedPosition() {
@@ -185,7 +186,7 @@
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
       const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
 
-      ctx.lineWidth = 6; // slightly thicker for mobile
+      ctx.lineWidth = 6;
       ctx.lineCap = 'round';
       ctx.strokeStyle = currentColor;
 
@@ -198,7 +199,7 @@
     canvas.addEventListener('mousedown', startPosition);
     canvas.addEventListener('mouseup', finishedPosition);
     canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); }); // prevents scrolling while drawing
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
     canvas.addEventListener('touchend', finishedPosition);
     canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
   </script>
