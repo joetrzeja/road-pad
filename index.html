@@ -24,7 +24,7 @@
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
     
-    /* Sharpen canvas rendering for high-DPI zoom */
+    /* Sharpen stretched tiles */
     .leaflet-tile {
       image-rendering: -webkit-optimize-contrast;
       image-rendering: crisp-edges;
@@ -215,12 +215,11 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Esri High-Resolution World Imagery
+    // Esri Satellite Layer configured for smooth upscaling without missing-tile errors
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri',
-      maxNativeZoom: 19,
-      maxZoom: 21,
-      detectRetina: true
+      maxNativeZoom: 18,
+      maxZoom: 21
     }).addTo(map);
 
     let userMarker = null;
@@ -240,7 +239,7 @@
 
         if (data && data.length > 0) {
           const { lat, lon } = data[0];
-          map.flyTo([parseFloat(lat), parseFloat(lon)], 19, { duration: 1.5 });
+          map.flyTo([parseFloat(lat), parseFloat(lon)], 18, { duration: 1.5 });
         } else {
           alert('Location not found. Try entering a specific road, roundabout name, or postcode.');
         }
@@ -261,7 +260,7 @@
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
-            map.setView([latitude, longitude], 20);
+            map.setView([latitude, longitude], 18);
             
             if (userMarker) map.removeLayer(userMarker);
             userMarker = L.circleMarker([latitude, longitude], {
