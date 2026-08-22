@@ -239,7 +239,8 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    /* Updated to lyrs=y for Satellite + Road Names Overlay */
+    L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       attribution: '&copy; Google Maps'
@@ -320,8 +321,8 @@
               <rect x="9" y="26" width="22" height="24" rx="4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
               <rect x="1" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
               <rect x="36" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
-              <rect x="6" y="3" width="6" height="3" rx="1" fill="#ffffff"/>
-              <rect x="28" y="3" width="6" height="3" rx="1" fill="#ffffff"/>
+              <rect x="6" y="3" width="6" height="3" rx="1" fill="${color}"/>
+              <rect x="28" y="3" width="6" height="3" rx="1" fill="${color}"/>
               <rect x="6" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
               <rect x="28" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
             </svg>
