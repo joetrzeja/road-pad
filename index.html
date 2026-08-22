@@ -211,9 +211,11 @@
       toggleToolbarBtn.innerText = mainToolbar.classList.contains('hidden') ? '👁️‍🗨️' : '👁️';
     });
 
+    // Explicitly configure Leaflet for manual-only rotation
     const map = L.map('map', {
       rotate: true,
       touchRotate: true,
+      compassControl: false, // Disables device compass auto-orientation
       bearing: 0,
       zoomControl: false,
       maxZoom: 21
@@ -260,6 +262,7 @@
       if (e.key === 'Enter') performSearch();
     });
 
+    // Geolocation centers the map without changing orientation
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -429,6 +432,7 @@
       });
     }
 
+    // Manual Map Rotation Controls (Slider + 2-Finger Touch)
     const rotateSlider = document.getElementById('rotate-slider');
     const resetNorthBtn = document.getElementById('reset-north');
 
@@ -442,7 +446,9 @@
     });
 
     map.on('rotate', () => {
-      rotateSlider.value = map.getBearing();
+      let currentBearing = Math.round(map.getBearing());
+      if (currentBearing < 0) currentBearing += 360;
+      rotateSlider.value = currentBearing;
     });
 
     const canvas = document.getElementById('draw-canvas');
