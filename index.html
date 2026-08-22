@@ -24,10 +24,10 @@
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
     
-    /* Reposition Leaflet Zoom Buttons so they stay safely on-screen */
+    /* Shift Leaflet Zoom Buttons inward away from screen edges */
     .leaflet-bottom.leaflet-right {
-      right: 16px !important;
-      bottom: 20px !important;
+      right: 28px !important;
+      bottom: 35px !important;
     }
 
     /* Toggle Floating Button */
@@ -216,7 +216,6 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Direct Google Satellite Tiles with Subdomain Balancing (Native HD)
     L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       maxZoom: 20,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
