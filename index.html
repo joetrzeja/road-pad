@@ -24,6 +24,12 @@
     #map { height: 100vh; width: 100vw; z-index: 1; }
     #draw-canvas { position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none; }
     
+    /* Reposition Leaflet Zoom Buttons so they stay safely on-screen */
+    .leaflet-bottom.leaflet-right {
+      right: 16px !important;
+      bottom: 20px !important;
+    }
+
     /* Sharpen stretched tiles */
     .leaflet-tile {
       image-rendering: -webkit-optimize-contrast;
@@ -215,7 +221,6 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Esri Satellite Layer configured for smooth upscaling without missing-tile errors
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri',
       maxNativeZoom: 18,
