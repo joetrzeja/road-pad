@@ -30,12 +30,6 @@
       bottom: 20px !important;
     }
 
-    /* Sharpen stretched tiles */
-    .leaflet-tile {
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-    }
-
     /* Toggle Floating Button */
     .toggle-bar-btn {
       position: absolute;
@@ -211,22 +205,22 @@
       toggleToolbarBtn.innerText = mainToolbar.classList.contains('hidden') ? '👁️‍🗨️' : '👁️';
     });
 
-    // Explicitly configure Leaflet for manual-only rotation
     const map = L.map('map', {
       rotate: true,
       touchRotate: true,
-      compassControl: false, // Disables device compass auto-orientation
+      compassControl: false,
       bearing: 0,
       zoomControl: false,
-      maxZoom: 21
+      maxZoom: 20
     }).setView([51.7356, 0.4685], 18);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxNativeZoom: 18,
-      maxZoom: 21
+    // Direct Google Satellite Tiles with Subdomain Balancing (Native HD)
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps'
     }).addTo(map);
 
     let userMarker = null;
@@ -262,7 +256,6 @@
       if (e.key === 'Enter') performSearch();
     });
 
-    // Geolocation centers the map without changing orientation
     document.getElementById('locate-me').addEventListener('click', () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -432,7 +425,6 @@
       });
     }
 
-    // Manual Map Rotation Controls (Slider + 2-Finger Touch)
     const rotateSlider = document.getElementById('rotate-slider');
     const resetNorthBtn = document.getElementById('reset-north');
 
