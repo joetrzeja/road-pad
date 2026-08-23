@@ -161,24 +161,35 @@
       touch-action: none;
     }
 
-    .pin-btn {
+    /* Car action controls container */
+    .car-actions {
       display: none;
       position: absolute;
-      bottom: -15px;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      border: 1px solid #fff;
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: bold;
-      white-space: nowrap;
+      bottom: -22px;
+      flex-direction: row;
+      gap: 4px;
       z-index: 1000;
     }
 
+    .action-btn {
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .action-btn-delete {
+      background: rgba(220, 53, 69, 0.9);
+    }
+
     .car-container.selected .rotate-arm,
-    .car-container.selected .pin-btn {
-      display: block !important;
+    .car-container.selected .car-actions {
+      display: flex !important;
     }
 
     .car-container.pinned .rotate-arm {
@@ -206,7 +217,6 @@
     <button class="color-btn" style="background: #ffcc00;" data-color="#ffcc00"></button>
     <button class="color-btn" style="background: #ff6600;" data-color="#ff6600"></button>
     <button class="color-btn" style="background: #9933ff;" data-color="#9933ff"></button>
-    <!-- White palette button with dark border -->
     <button class="color-btn" style="background: #ffffff; border: 2px solid #333;" data-color="#ffffff"></button>
 
     <button id="clear-draw" class="btn btn-danger">Clear</button>
@@ -330,7 +340,10 @@
               <rect x="28" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
             </svg>
           </div>
-          <button class="pin-btn">📌 Pin</button>
+          <div class="car-actions">
+            <button class="action-btn pin-btn">📌 Pin</button>
+            <button class="action-btn action-btn-delete delete-btn">🗑️</button>
+          </div>
         </div>
       `;
     }
@@ -369,6 +382,11 @@
       });
     }
 
+    function removeCar(car) {
+      map.removeLayer(car);
+      carMarkers = carMarkers.filter(c => c !== car);
+    }
+
     map.on('click', () => deselectAllCars());
 
     function attachCarEvents(car) {
@@ -379,6 +397,7 @@
       const handle = el.querySelector('.rotate-handle');
       const wrapper = el.querySelector('.car-svg-wrapper');
       const pinBtn = el.querySelector('.pin-btn');
+      const deleteBtn = el.querySelector('.delete-btn');
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -398,6 +417,11 @@
           container.classList.remove('pinned');
           pinBtn.innerText = '📌 Pin';
         }
+      });
+
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeCar(car);
       });
 
       let isRotating = false;
@@ -446,8 +470,7 @@
 
       el.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        map.removeLayer(car);
-        carMarkers = carMarkers.filter(c => c !== car);
+        removeCar(car);
       });
     }
 
