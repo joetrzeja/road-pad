@@ -39,22 +39,29 @@
       cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
 
-    /* Compact Toolbar */
+    /* Vertical Side Toolbar with Scroll Support */
     .toolbar {
-      position: absolute; top: 10px; right: 62px; z-index: 3;
-      background: rgba(255,255,255,0.98); padding: 6px 8px; border-radius: 12px;
-      display: flex; flex-wrap: nowrap; gap: 5px; align-items: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: calc(100vw - 80px);
+      position: absolute; top: 62px; right: 10px; z-index: 3;
+      background: rgba(255,255,255,0.98); padding: 8px 6px; border-radius: 12px;
+      display: flex; flex-direction: column; gap: 8px; align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-height: calc(100dvh - 90px);
+      overflow-y: auto; overflow-x: hidden;
       border: 1px solid #e0e0e0; transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
     }
 
-    .toolbar.hidden { opacity: 0; transform: translateY(-15px); pointer-events: none; visibility: hidden; }
+    /* Hide scrollbar for a clean UI */
+    .toolbar::-webkit-scrollbar { width: 0px; background: transparent; }
 
-    /* Icon-First Compact Buttons */
+    .toolbar.hidden { 
+      opacity: 0; transform: translateX(15px); pointer-events: none; visibility: hidden; 
+    }
+
+    /* Compact Square Buttons */
     .btn { 
-      padding: 8px 10px; border: none; background: #007bff; color: white; 
-      border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;
+      padding: 0; border: none; background: #007bff; color: white; 
+      border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px;
       display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; box-sizing: border-box; flex-shrink: 0;
     }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
@@ -64,24 +71,25 @@
     .btn-car { background: #17a2b8; }
     .btn-toggle-roads { background: #6f42c1; }
     
-    /* Auto-expanding Search Input */
-    .search-container { display: flex; gap: 3px; align-items: center; }
+    /* Search Group */
+    .search-container { display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; }
     .search-input { 
-      padding: 7px 8px; border: 1px solid #ccc; border-radius: 6px; 
-      font-size: 12px; width: 80px; outline: none; transition: width 0.25s ease; 
+      padding: 6px; border: 1px solid #ccc; border-radius: 6px; 
+      font-size: 11px; width: 38px; text-align: center; outline: none; transition: width 0.25s ease; 
+      box-sizing: border-box;
     }
-    .search-input:focus { width: 140px; border-color: #007bff; }
+    .search-input:focus { width: 120px; border-color: #007bff; text-align: left; }
 
-    /* Single Color Swatch & Popover Palette */
-    .color-picker-wrapper { position: relative; }
+    /* Color Picker Wrapper & Popover */
+    .color-picker-wrapper { position: relative; flex-shrink: 0; }
     .color-picker-active { 
-      width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; 
+      width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; 
       box-shadow: 0 0 4px rgba(0,0,0,0.5); cursor: pointer; background: red; 
     }
     .color-popover {
-      display: none; position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
+      display: none; position: absolute; right: 42px; top: 50%; transform: translateY(-50%);
       background: #ffffff; padding: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      gap: 5px; z-index: 10; border: 1px solid #ddd;
+      gap: 6px; z-index: 10; border: 1px solid #ddd; flex-direction: row;
     }
     .color-popover.open { display: flex; }
     .color-btn { 
@@ -109,18 +117,19 @@
 
   <div id="main-toolbar" class="toolbar">
     <div class="search-container">
-      <input type="text" id="search-input" class="search-input" placeholder="Search...">
-      <button id="search-btn" class="btn">🔍</button>
+      <input type="text" id="search-input" class="search-input" placeholder="Search">
+      <button id="search-btn" class="btn" title="Search">🔍</button>
     </div>
 
     <button id="locate-me" class="btn btn-locate" title="Find My Location">📍</button>
-    <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️ Mode</button>
+    <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️</button>
+    <button id="undo-draw" class="btn btn-undo" title="Undo Last Line">↩️</button>
     <button id="add-car" class="btn btn-car" title="Add Car Marker">🚘</button>
     <button id="toggle-roads" class="btn btn-toggle-roads" title="Toggle Road Labels">🛣️</button>
     
     <!-- Color Selector Dropdown -->
     <div class="color-picker-wrapper">
-      <div id="active-color-btn" class="color-picker-active" title="Change Color"></div>
+      <div id="active-color-btn" class="color-picker-active" title="Change Line Color"></div>
       <div id="color-popover" class="color-popover">
         <button class="color-btn" style="background: red;" data-color="red"></button>
         <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
@@ -132,9 +141,8 @@
       </div>
     </div>
 
-    <button id="undo-draw" class="btn btn-undo" title="Undo Last Drawing Line">↩️</button>
-    <button id="clear-draw" class="btn btn-danger" title="Clear Map">🗑️</button>
-    <button id="reset-north" class="btn btn-reset" title="Reset Map Bearing to North">🧭</button>
+    <button id="clear-draw" class="btn btn-danger" title="Clear All">🗑️</button>
+    <button id="reset-north" class="btn btn-reset" title="Reset North">🧭</button>
   </div>
 
   <div id="map"></div>
@@ -375,7 +383,6 @@
       }
     });
 
-    /* Color Picker Toggle Logic */
     const activeColorBtn = document.getElementById('active-color-btn');
     const colorPopover = document.getElementById('color-popover');
 
@@ -394,8 +401,12 @@
 
     window.addEventListener('click', () => colorPopover.classList.remove('open'));
 
+    // UNDO: Removes the last drawn polyline layer
     document.getElementById('undo-draw').onclick = () => {
-      if (drawnPolylines.length > 0) map.removeLayer(drawnPolylines.pop());
+      if (drawnPolylines.length > 0) {
+        const lastPoly = drawnPolylines.pop();
+        map.removeLayer(lastPoly);
+      }
     };
 
     document.getElementById('clear-draw').onclick = () => {
