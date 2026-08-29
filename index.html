@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Map</title>
   
-  <!-- App Icon & PWA Web Manifest Links -->
   <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -14,7 +13,6 @@
   <meta name="apple-mobile-web-app-title" content="Instructor Map">
   <meta name="theme-color" content="#141821">
 
-  <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
@@ -184,6 +182,10 @@
       cursor: pointer;
     }
 
+    .action-btn-drive {
+      background: rgba(40, 167, 69, 0.9);
+    }
+
     .action-btn-delete {
       background: rgba(220, 53, 69, 0.9);
     }
@@ -269,7 +271,6 @@
       attribution: '&copy; Google Maps'
     });
 
-    // Default to displaying road names
     googleHybridLayer.addTo(map);
     let roadsVisible = true;
 
@@ -289,6 +290,8 @@
 
     let userMarker = null;
     let carMarkers = [];
+    let drawnPaths = []; 
+    let currentPathPoints = []; 
 
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
@@ -369,6 +372,7 @@
             </svg>
           </div>
           <div class="car-actions">
+            <button class="action-btn action-btn-drive drive-btn">▶️ Drive</button>
             <button class="action-btn pin-btn">📌 Pin</button>
             <button class="action-btn action-btn-delete delete-btn">🗑️</button>
           </div>
@@ -411,6 +415,7 @@
     }
 
     function removeCar(car) {
+      if (car.animationTimer) clearInterval(car.animationTimer);
       map.removeLayer(car);
       carMarkers = carMarkers.filter(c => c !== car);
     }
@@ -424,6 +429,7 @@
       const container = el.querySelector('.car-container');
       const handle = el.querySelector('.rotate-handle');
       const wrapper = el.querySelector('.car-svg-wrapper');
+      const driveBtn = el.querySelector('.drive-btn');
       const pinBtn = el.querySelector('.pin-btn');
       const deleteBtn = el.querySelector('.delete-btn');
 
@@ -450,6 +456,15 @@
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         removeCar(car);
+      });
+
+      driveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (car.isDriving) {
+          stopCarDrive(car, driveBtn);
+        } else {
+          startCarDrive(car, driveBtn, wrapper);
+        }
       });
 
       let isRotating = false;
@@ -500,6 +515,54 @@
         e.stopPropagation();
         removeCar(car);
       });
+    }
+
+    function startCarDrive(car, driveBtn, wrapper) {
+      if (drawnPaths.length === 0) {
+        alert('Please draw a path on the map first using the ✏️ Draw tool!');
+        return;
+      }
+
+      // Pick latest drawn path
+      const path = drawnPaths[drawnPaths.length - 1];
+      if (path.length < 2) return;
+
+      car.isDriving = true;
+      driveBtn.innerText = '⏹️ Stop';
+
+      let stepIndex = 0;
+      const speed = 35; // MS delay per frame update
+
+      car.animationTimer = setInterval(() => {
+        if (stepIndex >= path.length) {
+          stopCarDrive(car, driveBtn);
+          return;
+        }
+
+        const currentPt = path[stepIndex];
+        car.setLatLng(currentPt);
+
+        if (stepIndex < path.length - 1) {
+          const nextPt = path[stepIndex + 1];
+          const p1 = map.latLngToContainerPoint(currentPt);
+          const p2 = map.latLngToContainerPoint(nextPt);
+
+          // Calculate rotation angle to follow path
+          const radians = Math.atan2(p2.x - p1.x, -(p2.y - p1.y));
+          let degrees = Math.round(radians * (180 / Math.PI));
+
+          car.carRotation = degrees;
+          wrapper.style.transform = `rotate(${degrees}deg)`;
+        }
+
+        stepIndex++;
+      }, speed);
+    }
+
+    function stopCarDrive(car, driveBtn) {
+      car.isDriving = false;
+      if (car.animationTimer) clearInterval(car.animationTimer);
+      if (driveBtn) driveBtn.innerText = '▶️ Drive';
     }
 
     const rotateSlider = document.getElementById('rotate-slider');
@@ -556,21 +619,18 @@
         map.boxZoom.disable();
         map.keyboard.disable();
 
-        // Lock Map Touch Rotation
         if (map.touchRotate) {
           map.touchRotate.disable();
         }
         rotateSlider.disabled = true;
 
-        // Disable Car Dragging while drawing
         carMarkers.forEach(c => c.dragging.disable());
 
-        // Lock Physical Device Screen Orientation
         if (screen.orientation && screen.orientation.lock) {
           try {
             await screen.orientation.lock(screen.orientation.type);
           } catch (err) {
-            console.warn('Device orientation lock not available in standard browser view:', err);
+            console.warn('Device orientation lock unavailable:', err);
           }
         }
       } else {
@@ -581,18 +641,15 @@
         map.boxZoom.enable();
         map.keyboard.enable();
 
-        // Unlock Map Touch Rotation
         if (map.touchRotate) {
           map.touchRotate.enable();
         }
         rotateSlider.disabled = false;
 
-        // Re-enable Car Dragging for unpinned cars
         carMarkers.forEach(c => {
           if (!c.isPinned) c.dragging.enable();
         });
 
-        // Unlock Physical Device Screen Orientation
         if (screen.orientation && screen.orientation.unlock) {
           try {
             screen.orientation.unlock();
@@ -614,27 +671,38 @@
 
     document.getElementById('clear-draw').onclick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      carMarkers.forEach(c => map.removeLayer(c));
+      carMarkers.forEach(c => removeCar(c));
       carMarkers = [];
+      drawnPaths = [];
       carColorIndex = 0;
     };
 
     function startPosition(e) {
       if (!isDrawingMode) return;
       isPainting = true;
+      currentPathPoints = [];
       ctx.beginPath();
       draw(e);
     }
+    
     function finishedPosition() {
       if (!isPainting) return;
       isPainting = false;
+      if (currentPathPoints.length > 1) {
+        drawnPaths.push([...currentPathPoints]);
+      }
     }
+
     function draw(e) {
       if (!isPainting || !isDrawingMode) return;
       
       const rect = canvas.getBoundingClientRect();
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
       const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+      // Save geographic coordinate from screen point
+      const latLng = map.containerPointToLatLng([x, y]);
+      currentPathPoints.push(latLng);
 
       ctx.lineWidth = 6;
       ctx.lineCap = 'round';
