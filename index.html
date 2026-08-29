@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Map</title>
   
+  <!-- App Icon & PWA Web Manifest Links -->
   <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -13,6 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Instructor Map">
   <meta name="theme-color" content="#141821">
 
+  <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
@@ -100,6 +102,7 @@
     .btn { padding: 9px 12px; border: none; background: #007bff; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
+    .btn-undo { background: #fd7e14; color: #fff; }
     .btn-locate { background: #28a745; }
     .btn-reset { background: #6c757d; }
     .btn-car { background: #17a2b8; color: #fff; }
@@ -223,7 +226,8 @@
     <button class="color-btn" style="background: #9933ff;" data-color="#9933ff"></button>
     <button class="color-btn" style="background: #ffffff; border: 2px solid #333;" data-color="#ffffff"></button>
 
-    <button id="clear-draw" class="btn btn-danger">Clear</button>
+    <button id="undo-draw" class="btn btn-undo">↩️ Undo</button>
+    <button id="clear-draw" class="btn btn-danger">Clear All</button>
 
     <div class="rotate-container">
       🧭 <input type="range" id="rotate-slider" min="0" max="360" value="0">
@@ -254,7 +258,7 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    /* Google Map Tile Definitions: lyrs=y (Hybrid w/ Roads) vs lyrs=s (Satellite Only) */
+    /* Google Map Tile Definitions */
     const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2', {
       maxZoom: 20,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -290,8 +294,10 @@
 
     let userMarker = null;
     let carMarkers = [];
-    let drawnPaths = []; 
-    let currentPathPoints = []; 
+    
+    // Store drawings as active Leaflet Polyline objects
+    let drawnPolylines = []; 
+    let currentPolylinePoints = []; 
 
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
@@ -518,14 +524,15 @@
     }
 
     function startCarDrive(car, driveBtn, wrapper) {
-      if (drawnPaths.length === 0) {
+      if (drawnPolylines.length === 0) {
         alert('Please draw a path on the map first using the ✏️ Draw tool!');
         return;
       }
 
-      // Pick latest drawn path
-      const path = drawnPaths[drawnPaths.length - 1];
-      if (path.length < 2) return;
+      // Drive along the most recently drawn polyline
+      const lastPolyline = drawnPolylines[drawnPolylines.length - 1];
+      const path = lastPolyline.getLatLngs();
+      if (!path || path.length < 2) return;
 
       car.isDriving = true;
       driveBtn.innerText = '⏹️ Stop';
@@ -547,7 +554,6 @@
           const p1 = map.latLngToContainerPoint(currentPt);
           const p2 = map.latLngToContainerPoint(nextPt);
 
-          // Calculate rotation angle to follow path
           const radians = Math.atan2(p2.x - p1.x, -(p2.y - p1.y));
           let degrees = Math.round(radians * (180 / Math.PI));
 
@@ -612,7 +618,6 @@
       if (isDrawingMode) {
         deselectAllCars();
 
-        // Lock Map Navigation Controls
         map.dragging.disable();
         map.touchZoom.disable();
         map.doubleClickZoom.disable();
@@ -634,7 +639,6 @@
           }
         }
       } else {
-        // Unlock Map Navigation Controls
         map.dragging.enable();
         map.touchZoom.enable();
         map.doubleClickZoom.enable();
@@ -669,18 +673,30 @@
       });
     });
 
+    // UNDO: Removes ONLY the last drawn line layer
+    document.getElementById('undo-draw').onclick = () => {
+      if (drawnPolylines.length > 0) {
+        const lastPolyline = drawnPolylines.pop();
+        map.removeLayer(lastPolyline);
+      }
+    };
+
+    // CLEAR ALL: Removes all drawing lines & cars
     document.getElementById('clear-draw').onclick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawnPolylines.forEach(p => map.removeLayer(p));
+      drawnPolylines = [];
       carMarkers.forEach(c => removeCar(c));
       carMarkers = [];
-      drawnPaths = [];
       carColorIndex = 0;
     };
 
     function startPosition(e) {
       if (!isDrawingMode) return;
       isPainting = true;
-      currentPathPoints = [];
+      currentPolylinePoints = [];
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.beginPath();
       draw(e);
     }
@@ -688,9 +704,22 @@
     function finishedPosition() {
       if (!isPainting) return;
       isPainting = false;
-      if (currentPathPoints.length > 1) {
-        drawnPaths.push([...currentPathPoints]);
+
+      // Convert active sketch on temporary canvas into a permanent map polyline layer
+      if (currentPolylinePoints.length > 1) {
+        const polyline = L.polyline(currentPolylinePoints, {
+          color: currentColor,
+          weight: 6,
+          opacity: 0.9,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(map);
+
+        drawnPolylines.push(polyline);
       }
+      
+      // Wipe temporary live-sketch canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     function draw(e) {
@@ -700,9 +729,8 @@
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
       const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
 
-      // Save geographic coordinate from screen point
       const latLng = map.containerPointToLatLng([x, y]);
-      currentPathPoints.push(latLng);
+      currentPolylinePoints.push(latLng);
 
       ctx.lineWidth = 6;
       ctx.lineCap = 'round';
