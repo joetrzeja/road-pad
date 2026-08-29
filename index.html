@@ -105,6 +105,7 @@
     .btn-locate { background: #28a745; }
     .btn-reset { background: #6c757d; }
     .btn-car { background: #17a2b8; color: #fff; }
+    .btn-toggle-roads { background: #6f42c1; color: #fff; }
     
     .search-container { display: flex; gap: 4px; align-items: center; }
     .search-input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; width: 140px; outline: none; }
@@ -210,6 +211,7 @@
     <button id="locate-me" class="btn btn-locate">📍 Location</button>
     <button id="toggle-draw" class="btn">✏️ Draw: OFF</button>
     <button id="add-car" class="btn btn-car">🚘 +Car</button>
+    <button id="toggle-roads" class="btn btn-toggle-roads">🛣️ Roads: ON</button>
     
     <button class="color-btn selected" style="background: red;" data-color="red"></button>
     <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
@@ -250,14 +252,40 @@
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    /* Forced High-DPI Hybrid Google Map tiles with scale=2 for tablet displays */
-    L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2', {
+    /* Google Map Tile Definitions: lyrs=y (Hybrid w/ Roads) vs lyrs=s (Satellite Only) */
+    const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2', {
       maxZoom: 20,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       tileSize: 256,
       zoomOffset: 0,
       attribution: '&copy; Google Maps'
-    }).addTo(map);
+    });
+
+    const googleSatOnlyLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&scale=2', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      tileSize: 256,
+      zoomOffset: 0,
+      attribution: '&copy; Google Maps'
+    });
+
+    // Default to displaying road names
+    googleHybridLayer.addTo(map);
+    let roadsVisible = true;
+
+    const toggleRoadsBtn = document.getElementById('toggle-roads');
+    toggleRoadsBtn.addEventListener('click', () => {
+      roadsVisible = !roadsVisible;
+      if (roadsVisible) {
+        map.removeLayer(googleSatOnlyLayer);
+        map.addLayer(googleHybridLayer);
+        toggleRoadsBtn.innerText = '🛣️ Roads: ON';
+      } else {
+        map.removeLayer(googleHybridLayer);
+        map.addLayer(googleSatOnlyLayer);
+        toggleRoadsBtn.innerText = '🛣️ Roads: OFF';
+      }
+    });
 
     let userMarker = null;
     let carMarkers = [];
