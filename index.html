@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Map</title>
   
+  <!-- App Icon & PWA Web Manifest Links -->
   <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -13,6 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Instructor Map">
   <meta name="theme-color" content="#141821">
 
+  <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
@@ -28,6 +30,7 @@
     
     .leaflet-bottom.leaflet-right { right: 28px !important; bottom: 35px !important; }
 
+    /* Floating Toggle Button */
     .toggle-bar-btn {
       position: absolute; top: 10px; right: 10px; z-index: 4;
       background: #007bff; color: #fff; border: 2px solid #fff;
@@ -36,17 +39,18 @@
       cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
 
+    /* Compact Toolbar */
     .toolbar {
       position: absolute; top: 10px; right: 62px; z-index: 3;
       background: rgba(255,255,255,0.98); padding: 6px 8px; border-radius: 12px;
-      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      display: flex; flex-wrap: nowrap; gap: 5px; align-items: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: calc(100vw - 80px);
       border: 1px solid #e0e0e0; transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
     }
 
     .toolbar.hidden { opacity: 0; transform: translateY(-15px); pointer-events: none; visibility: hidden; }
 
-    /* Streamlined Compact Buttons */
+    /* Icon-First Compact Buttons */
     .btn { 
       padding: 8px 10px; border: none; background: #007bff; color: white; 
       border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;
@@ -60,32 +64,32 @@
     .btn-car { background: #17a2b8; }
     .btn-toggle-roads { background: #6f42c1; }
     
-    /* Expanding Search Input */
+    /* Auto-expanding Search Input */
     .search-container { display: flex; gap: 3px; align-items: center; }
     .search-input { 
       padding: 7px 8px; border: 1px solid #ccc; border-radius: 6px; 
-      font-size: 12px; width: 90px; outline: none; transition: width 0.2s ease; 
+      font-size: 12px; width: 80px; outline: none; transition: width 0.25s ease; 
     }
-    .search-input:focus { width: 150px; border-color: #007bff; }
+    .search-input:focus { width: 140px; border-color: #007bff; }
 
-    /* Single Active Color Button & Popover Palette */
+    /* Single Color Swatch & Popover Palette */
     .color-picker-wrapper { position: relative; }
     .color-picker-active { 
-      width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; 
+      width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; 
       box-shadow: 0 0 4px rgba(0,0,0,0.5); cursor: pointer; background: red; 
     }
     .color-popover {
-      display: none; position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
+      display: none; position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
       background: #ffffff; padding: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      gap: 6px; z-index: 10; border: 1px solid #ddd;
+      gap: 5px; z-index: 10; border: 1px solid #ddd;
     }
     .color-popover.open { display: flex; }
     .color-btn { 
-      width: 26px; height: 26px; border-radius: 50%; border: 1px solid #888; 
-      cursor: pointer; padding: 0; 
+      width: 24px; height: 24px; border-radius: 50%; border: 1px solid #888; 
+      cursor: pointer; padding: 0; flex-shrink: 0;
     }
 
-    /* Car Marker CSS */
+    /* Car Marker Overlay */
     .custom-car-marker { background: transparent !important; border: none !important; }
     .car-container { position: relative; width: 50px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .car-svg-wrapper { width: 28px; height: 48px; transform-origin: center center; }
@@ -109,14 +113,14 @@
       <button id="search-btn" class="btn">🔍</button>
     </div>
 
-    <button id="locate-me" class="btn btn-locate" title="Find Location">📍</button>
-    <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️</button>
-    <button id="add-car" class="btn btn-car" title="Add Car">🚘</button>
+    <button id="locate-me" class="btn btn-locate" title="Find My Location">📍</button>
+    <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️ Mode</button>
+    <button id="add-car" class="btn btn-car" title="Add Car Marker">🚘</button>
     <button id="toggle-roads" class="btn btn-toggle-roads" title="Toggle Road Labels">🛣️</button>
     
     <!-- Color Selector Dropdown -->
     <div class="color-picker-wrapper">
-      <div id="active-color-btn" class="color-picker-active"></div>
+      <div id="active-color-btn" class="color-picker-active" title="Change Color"></div>
       <div id="color-popover" class="color-popover">
         <button class="color-btn" style="background: red;" data-color="red"></button>
         <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
@@ -128,9 +132,9 @@
       </div>
     </div>
 
-    <button id="undo-draw" class="btn btn-undo" title="Undo Line">↩️</button>
-    <button id="clear-draw" class="btn btn-danger" title="Clear All">🗑️ Clear</button>
-    <button id="reset-north" class="btn btn-reset" title="Reset North">🧭 North</button>
+    <button id="undo-draw" class="btn btn-undo" title="Undo Last Drawing Line">↩️</button>
+    <button id="clear-draw" class="btn btn-danger" title="Clear Map">🗑️</button>
+    <button id="reset-north" class="btn btn-reset" title="Reset Map Bearing to North">🧭</button>
   </div>
 
   <div id="map"></div>
@@ -215,7 +219,7 @@
               radius: 9, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 0.9
             }).addTo(map);
           },
-          () => alert('Position unavailable.'),
+          () => alert('Unable to get location.'),
           { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       }
@@ -371,7 +375,7 @@
       }
     });
 
-    /* Color Picker Popover Logic */
+    /* Color Picker Toggle Logic */
     const activeColorBtn = document.getElementById('active-color-btn');
     const colorPopover = document.getElementById('color-popover');
 
