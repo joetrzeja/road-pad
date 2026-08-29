@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Map</title>
   
-  <!-- App Icon & PWA Web Manifest Links -->
   <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -14,7 +13,6 @@
   <meta name="apple-mobile-web-app-title" content="Instructor Map">
   <meta name="theme-color" content="#141821">
 
-  <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
@@ -32,36 +30,35 @@
 
     /* Floating Toggle Button */
     .toggle-bar-btn {
-      position: absolute; top: 10px; right: 10px; z-index: 4;
+      position: absolute; top: 10px; right: 10px; z-index: 1001;
       background: #007bff; color: #fff; border: 2px solid #fff;
       border-radius: 50%; width: 44px; height: 44px; font-size: 18px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
 
-    /* Vertical Side Toolbar with Scroll Support */
+    /* Vertical Side Toolbar */
     .toolbar {
-      position: absolute; top: 62px; right: 10px; z-index: 3;
+      position: absolute; top: 62px; right: 10px; z-index: 1000;
       background: rgba(255,255,255,0.98); padding: 8px 6px; border-radius: 12px;
       display: flex; flex-direction: column; gap: 8px; align-items: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-height: calc(100dvh - 90px);
-      overflow-y: auto; overflow-x: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-height: calc(100dvh - 80px);
+      overflow-y: auto; overflow-x: visible;
       border: 1px solid #e0e0e0; transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
     }
 
-    /* Hide scrollbar for a clean UI */
     .toolbar::-webkit-scrollbar { width: 0px; background: transparent; }
 
     .toolbar.hidden { 
-      opacity: 0; transform: translateX(15px); pointer-events: none; visibility: hidden; 
+      opacity: 0; transform: translateX(20px); pointer-events: none; visibility: hidden; 
     }
 
-    /* Compact Square Buttons */
+    /* Fixed-Size Action Buttons */
     .btn { 
-      padding: 0; border: none; background: #007bff; color: white; 
-      border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px;
-      display: flex; align-items: center; justify-content: center;
-      width: 38px; height: 38px; box-sizing: border-box; flex-shrink: 0;
+      padding: 0 !important; margin: 0 !important; border: none; background: #007bff; color: white; 
+      border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      width: 38px !important; height: 38px !important; flex-shrink: 0 !important; box-sizing: border-box;
     }
     .btn.active { background: #0056b3; }
     .btn-danger { background: #dc3545; }
@@ -80,7 +77,7 @@
     }
     .search-input:focus { width: 120px; border-color: #007bff; text-align: left; }
 
-    /* Color Picker Wrapper & Popover */
+    /* Single Color Swatch & Popover Palette */
     .color-picker-wrapper { position: relative; flex-shrink: 0; }
     .color-picker-active { 
       width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; 
@@ -89,9 +86,9 @@
     .color-popover {
       display: none; position: absolute; right: 42px; top: 50%; transform: translateY(-50%);
       background: #ffffff; padding: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      gap: 6px; z-index: 10; border: 1px solid #ddd; flex-direction: row;
+      gap: 6px; z-index: 1005; border: 1px solid #ddd; flex-direction: row;
     }
-    .color-popover.open { display: flex; }
+    .color-popover.open { display: flex !important; }
     .color-btn { 
       width: 24px; height: 24px; border-radius: 50%; border: 1px solid #888; 
       cursor: pointer; padding: 0; flex-shrink: 0;
@@ -116,342 +113,4 @@
   <button id="toggle-toolbar-btn" class="toggle-bar-btn" title="Toggle Toolbar">👁️</button>
 
   <div id="main-toolbar" class="toolbar">
-    <div class="search-container">
-      <input type="text" id="search-input" class="search-input" placeholder="Search">
-      <button id="search-btn" class="btn" title="Search">🔍</button>
-    </div>
-
-    <button id="locate-me" class="btn btn-locate" title="Find My Location">📍</button>
-    <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️</button>
-    <button id="undo-draw" class="btn btn-undo" title="Undo Last Line">↩️</button>
-    <button id="add-car" class="btn btn-car" title="Add Car Marker">🚘</button>
-    <button id="toggle-roads" class="btn btn-toggle-roads" title="Toggle Road Labels">🛣️</button>
-    
-    <!-- Color Selector Dropdown -->
-    <div class="color-picker-wrapper">
-      <div id="active-color-btn" class="color-picker-active" title="Change Line Color"></div>
-      <div id="color-popover" class="color-popover">
-        <button class="color-btn" style="background: red;" data-color="red"></button>
-        <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
-        <button class="color-btn" style="background: #00cc44;" data-color="#00cc44"></button>
-        <button class="color-btn" style="background: #ffcc00;" data-color="#ffcc00"></button>
-        <button class="color-btn" style="background: #ff6600;" data-color="#ff6600"></button>
-        <button class="color-btn" style="background: #9933ff;" data-color="#9933ff"></button>
-        <button class="color-btn" style="background: #ffffff;" data-color="#ffffff"></button>
-      </div>
-    </div>
-
-    <button id="clear-draw" class="btn btn-danger" title="Clear All">🗑️</button>
-    <button id="reset-north" class="btn btn-reset" title="Reset North">🧭</button>
-  </div>
-
-  <div id="map"></div>
-  <canvas id="draw-canvas"></canvas>
-
-  <script>
-    const toggleToolbarBtn = document.getElementById('toggle-toolbar-btn');
-    const mainToolbar = document.getElementById('main-toolbar');
-
-    toggleToolbarBtn.addEventListener('click', () => {
-      mainToolbar.classList.toggle('hidden');
-      toggleToolbarBtn.innerText = mainToolbar.classList.contains('hidden') ? '👁️‍🗨️' : '👁️';
-    });
-
-    const map = L.map('map', {
-      rotate: true, touchRotate: true, compassControl: false,
-      bearing: 0, zoomControl: false, maxZoom: 20
-    }).setView([51.7356, 0.4685], 18);
-
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2', {
-      maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], tileSize: 256, zoomOffset: 0, attribution: '&copy; Google Maps'
-    });
-
-    const googleSatOnlyLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&scale=2', {
-      maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], tileSize: 256, zoomOffset: 0, attribution: '&copy; Google Maps'
-    });
-
-    googleHybridLayer.addTo(map);
-    let roadsVisible = true;
-
-    const toggleRoadsBtn = document.getElementById('toggle-roads');
-    toggleRoadsBtn.addEventListener('click', () => {
-      roadsVisible = !roadsVisible;
-      if (roadsVisible) {
-        map.removeLayer(googleSatOnlyLayer); map.addLayer(googleHybridLayer);
-        toggleRoadsBtn.classList.remove('active');
-      } else {
-        map.removeLayer(googleHybridLayer); map.addLayer(googleSatOnlyLayer);
-        toggleRoadsBtn.classList.add('active');
-      }
-    });
-
-    let userMarker = null;
-    let carMarkers = [];
-    let drawnPolylines = []; 
-    let currentPolylinePoints = []; 
-
-    const searchInput = document.getElementById('search-input');
-    const searchBtn = document.getElementById('search-btn');
-
-    async function performSearch() {
-      const query = searchInput.value.trim();
-      if (!query) return;
-      searchBtn.innerText = '⏳';
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-        const data = await response.json();
-        if (data && data.length > 0) {
-          map.flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 18, { duration: 1.5 });
-        } else {
-          alert('Location not found.');
-        }
-      } catch (err) {
-        alert('Search error.');
-      } finally {
-        searchBtn.innerText = '🔍';
-      }
-    }
-
-    searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-    document.getElementById('locate-me').addEventListener('click', () => {
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            map.setView([pos.coords.latitude, pos.coords.longitude], 18);
-            if (userMarker) map.removeLayer(userMarker);
-            userMarker = L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
-              radius: 9, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 0.9
-            }).addTo(map);
-          },
-          () => alert('Unable to get location.'),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-      }
-    });
-
-    const carColors = ['#e63946', '#0066ff', '#2a9d8f', '#e9c46a', '#f4a261', '#9b5de5', '#2b2d42'];
-    let carColorIndex = 0;
-
-    function getTopDownCarHTML(color) {
-      return `
-        <div class="car-container">
-          <div class="rotate-arm"><div class="rotate-handle"></div></div>
-          <div class="car-svg-wrapper">
-            <svg viewBox="0 0 40 70" width="28" height="48" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.7));">
-              <rect x="4" y="2" width="32" height="66" rx="9" fill="${color}" stroke="#111" stroke-width="2"/>
-              <path d="M 8 18 Q 20 12 32 18 L 30 26 Q 20 22 10 26 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
-              <path d="M 10 50 Q 20 53 30 50 L 29 56 Q 20 58 11 56 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
-              <rect x="9" y="26" width="22" height="24" rx="4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
-              <rect x="1" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
-              <rect x="36" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
-              <rect x="6" y="3" width="6" height="3" rx="1" fill="${color}"/>
-              <rect x="28" y="3" width="6" height="3" rx="1" fill="${color}"/>
-              <rect x="6" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
-              <rect x="28" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
-            </svg>
-          </div>
-          <div class="car-actions">
-            <button class="action-btn action-btn-drive drive-btn">▶️ Drive</button>
-            <button class="action-btn pin-btn">📌 Pin</button>
-            <button class="action-btn action-btn-delete delete-btn">🗑️</button>
-          </div>
-        </div>`;
-    }
-
-    document.getElementById('add-car').addEventListener('click', () => {
-      const color = carColors[carColorIndex % carColors.length]; carColorIndex++;
-      const customIcon = L.divIcon({ html: getTopDownCarHTML(color), className: 'custom-car-marker', iconSize: [50, 100], iconAnchor: [25, 50] });
-      const car = L.marker(map.getCenter(), { icon: customIcon, draggable: true }).addTo(map);
-      car.carRotation = 0; car.isPinned = false;
-      setTimeout(() => attachCarEvents(car), 100);
-      carMarkers.push(car);
-    });
-
-    function deselectAllCars() {
-      carMarkers.forEach(c => {
-        const el = c.getElement();
-        if (el) { const container = el.querySelector('.car-container'); if (container) container.classList.remove('selected'); }
-      });
-    }
-
-    function removeCar(car) {
-      if (car.animationTimer) clearInterval(car.animationTimer);
-      map.removeLayer(car);
-      carMarkers = carMarkers.filter(c => c !== car);
-    }
-
-    map.on('click', () => deselectAllCars());
-
-    function attachCarEvents(car) {
-      const el = car.getElement(); if (!el) return;
-      const container = el.querySelector('.car-container');
-      const handle = el.querySelector('.rotate-handle');
-      const wrapper = el.querySelector('.car-svg-wrapper');
-      const driveBtn = el.querySelector('.drive-btn');
-      const pinBtn = el.querySelector('.pin-btn');
-      const deleteBtn = el.querySelector('.delete-btn');
-
-      el.addEventListener('click', (e) => { e.stopPropagation(); deselectAllCars(); container.classList.add('selected'); });
-      pinBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); car.isPinned = !car.isPinned;
-        if (car.isPinned) { car.dragging.disable(); container.classList.add('pinned'); pinBtn.innerText = '🔓 Unpin'; }
-        else { car.dragging.enable(); container.classList.remove('pinned'); pinBtn.innerText = '📌 Pin'; }
-      });
-      deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); removeCar(car); });
-      driveBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (car.isDriving) stopCarDrive(car, driveBtn);
-        else startCarDrive(car, driveBtn, wrapper);
-      });
-
-      let isRotating = false;
-      const startRotate = (e) => { if (car.isPinned) return; e.stopPropagation(); e.preventDefault(); isRotating = true; map.dragging.disable(); };
-      const doRotate = (e) => {
-        if (!isRotating) return; e.stopPropagation();
-        const rect = wrapper.getBoundingClientRect();
-        const radians = Math.atan2((e.touches ? e.touches[0].clientX : e.clientX) - (rect.left + rect.width / 2), -((e.touches ? e.touches[0].clientY : e.clientY) - (rect.top + rect.height / 2)));
-        let degrees = Math.round(radians * (180 / Math.PI));
-        car.carRotation = degrees; wrapper.style.transform = `rotate(${degrees}deg)`;
-      };
-      const stopRotate = () => { if (isRotating) { isRotating = false; if (!isDrawingMode && !car.isPinned) map.dragging.enable(); } };
-
-      handle.addEventListener('mousedown', startRotate); handle.addEventListener('touchstart', startRotate);
-      window.addEventListener('mousemove', doRotate); window.addEventListener('touchmove', doRotate);
-      window.addEventListener('mouseup', stopRotate); window.addEventListener('touchend', stopRotate);
-      el.addEventListener('dblclick', (e) => { e.stopPropagation(); removeCar(car); });
-    }
-
-    function startCarDrive(car, driveBtn, wrapper) {
-      if (drawnPolylines.length === 0) { alert('Draw a path first!'); return; }
-      const path = drawnPolylines[drawnPolylines.length - 1].getLatLngs();
-      if (!path || path.length < 2) return;
-
-      car.isDriving = true; driveBtn.innerText = '⏹️ Stop';
-      let stepIndex = 0;
-      car.animationTimer = setInterval(() => {
-        if (stepIndex >= path.length) { stopCarDrive(car, driveBtn); return; }
-        const currentPt = path[stepIndex]; car.setLatLng(currentPt);
-        if (stepIndex < path.length - 1) {
-          const nextPt = path[stepIndex + 1];
-          const p1 = map.latLngToContainerPoint(currentPt); const p2 = map.latLngToContainerPoint(nextPt);
-          const degrees = Math.round(Math.atan2(p2.x - p1.x, -(p2.y - p1.y)) * (180 / Math.PI));
-          car.carRotation = degrees; wrapper.style.transform = `rotate(${degrees}deg)`;
-        }
-        stepIndex++;
-      }, 35);
-    }
-
-    function stopCarDrive(car, driveBtn) {
-      car.isDriving = false;
-      if (car.animationTimer) clearInterval(car.animationTimer);
-      if (driveBtn) driveBtn.innerText = '▶️ Drive';
-    }
-
-    document.getElementById('reset-north').addEventListener('click', () => map.setBearing(0));
-
-    const canvas = document.getElementById('draw-canvas');
-    const ctx = canvas.getContext('2d');
-    let isDrawingMode = false; let isPainting = false; let currentColor = 'red';
-
-    function handleResize() {
-      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-      if (map) map.invalidateSize();
-    }
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
-    handleResize();
-
-    const drawBtn = document.getElementById('toggle-draw');
-    drawBtn.addEventListener('click', async () => {
-      isDrawingMode = !isDrawingMode;
-      canvas.style.pointerEvents = isDrawingMode ? 'auto' : 'none';
-      drawBtn.classList.toggle('active', isDrawingMode);
-
-      if (isDrawingMode) {
-        deselectAllCars();
-        map.dragging.disable(); map.touchZoom.disable(); map.doubleClickZoom.disable(); map.boxZoom.disable(); map.keyboard.disable();
-        if (map.touchRotate) map.touchRotate.disable();
-        carMarkers.forEach(c => c.dragging.disable());
-      } else {
-        map.dragging.enable(); map.touchZoom.enable(); map.doubleClickZoom.enable(); map.boxZoom.enable(); map.keyboard.enable();
-        if (map.touchRotate) map.touchRotate.enable();
-        carMarkers.forEach(c => { if (!c.isPinned) c.dragging.enable(); });
-      }
-    });
-
-    const activeColorBtn = document.getElementById('active-color-btn');
-    const colorPopover = document.getElementById('color-popover');
-
-    activeColorBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      colorPopover.classList.toggle('open');
-    });
-
-    document.querySelectorAll('.color-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        currentColor = e.target.getAttribute('data-color');
-        activeColorBtn.style.background = currentColor;
-        colorPopover.classList.remove('open');
-      });
-    });
-
-    window.addEventListener('click', () => colorPopover.classList.remove('open'));
-
-    // UNDO: Removes the last drawn polyline layer
-    document.getElementById('undo-draw').onclick = () => {
-      if (drawnPolylines.length > 0) {
-        const lastPoly = drawnPolylines.pop();
-        map.removeLayer(lastPoly);
-      }
-    };
-
-    document.getElementById('clear-draw').onclick = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawnPolylines.forEach(p => map.removeLayer(p));
-      drawnPolylines = [];
-      carMarkers.forEach(c => removeCar(c));
-      carMarkers = []; carColorIndex = 0;
-    };
-
-    function startPosition(e) {
-      if (!isDrawingMode) return;
-      isPainting = true; currentPolylinePoints = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.beginPath(); draw(e);
-    }
-    
-    function finishedPosition() {
-      if (!isPainting) return;
-      isPainting = false;
-      if (currentPolylinePoints.length > 1) {
-        const polyline = L.polyline(currentPolylinePoints, {
-          color: currentColor, weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round'
-        }).addTo(map);
-        drawnPolylines.push(polyline);
-      }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function draw(e) {
-      if (!isPainting || !isDrawingMode) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-
-      currentPolylinePoints.push(map.containerPointToLatLng([x, y]));
-      ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor;
-      ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
-    }
-
-    canvas.addEventListener('mousedown', startPosition);
-    canvas.addEventListener('mouseup', finishedPosition);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
-    canvas.addEventListener('touchend', finishedPosition);
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
-  </script>
-</body>
-</html>
+    <div
