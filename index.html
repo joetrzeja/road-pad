@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Instructor Map</title>
   
-  <!-- App Icon & PWA Web Manifest Links -->
   <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -14,7 +13,6 @@
   <meta name="apple-mobile-web-app-title" content="Instructor Map">
   <meta name="theme-color" content="#141821">
 
-  <!-- Leaflet CSS & Map Rotation Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
@@ -55,7 +53,7 @@
       opacity: 0; transform: translateX(20px); pointer-events: none; visibility: hidden; 
     }
 
-    /* Fixed-Size Square Buttons */
+    /* Fixed-Size Action Buttons */
     .btn { 
       padding: 0 !important; margin: 0 !important; border: none; background: #007bff; color: white; 
       border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px;
@@ -79,21 +77,22 @@
     }
     .search-input:focus { width: 120px; border-color: #007bff; text-align: left; }
 
-    /* Single Color Swatch & Popover Palette */
-    .color-picker-wrapper { position: relative; flex-shrink: 0; }
-    .color-picker-active { 
-      width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; 
-      box-shadow: 0 0 4px rgba(0,0,0,0.5); cursor: pointer; background: red; 
+    /* Visible Color Swatches Stack */
+    .color-swatch-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
     }
-    .color-popover {
-      display: none; position: absolute; right: 42px; top: 50%; transform: translateY(-50%);
-      background: #ffffff; padding: 6px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      gap: 6px; z-index: 1005; border: 1px solid #ddd; flex-direction: row;
-    }
-    .color-popover.open { display: flex !important; }
+
     .color-btn { 
-      width: 24px; height: 24px; border-radius: 50%; border: 1px solid #888; 
-      cursor: pointer; padding: 0; flex-shrink: 0;
+      width: 26px; height: 26px; border-radius: 50%; border: 2px solid #888; 
+      cursor: pointer; padding: 0; flex-shrink: 0; transition: transform 0.1s ease;
+      box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    }
+    .color-btn.selected { 
+      border: 3px solid #000; transform: scale(1.15); box-shadow: 0 0 6px rgba(0,0,0,0.6); 
     }
 
     /* Car Marker Overlay */
@@ -123,25 +122,21 @@
     <button id="locate-me" class="btn btn-locate" title="Find My Location">📍</button>
     <button id="toggle-draw" class="btn" title="Toggle Draw Mode">✏️</button>
     <button id="undo-draw" class="btn btn-undo" title="Undo Last Line">↩️</button>
-    <button id="add-car" class="btn btn-car" title="Add Car Marker">🚘</button>
-    <button id="toggle-roads" class="btn btn-toggle-roads" title="Toggle Road Labels">🛣️</button>
-    
-    <!-- Color Swatch & Popover -->
-    <div class="color-picker-wrapper">
-      <div id="active-color-btn" class="color-picker-active" title="Change Line Color"></div>
-      <div id="color-popover" class="color-popover">
-        <button class="color-btn" style="background: red;" data-color="red"></button>
-        <button class="color-btn" style="background: #0066ff;" data-color="#0066ff"></button>
-        <button class="color-btn" style="background: #00cc44;" data-color="#00cc44"></button>
-        <button class="color-btn" style="background: #ffcc00;" data-color="#ffcc00"></button>
-        <button class="color-btn" style="background: #ff6600;" data-color="#ff6600"></button>
-        <button class="color-btn" style="background: #9933ff;" data-color="#9933ff"></button>
-        <button class="color-btn" style="background: #ffffff;" data-color="#ffffff"></button>
-      </div>
+
+    <div class="color-swatch-list">
+      <button class="color-btn selected" style="background: red;" data-color="red" title="Red"></button>
+      <button class="color-btn" style="background: #0066ff;" data-color="#0066ff" title="Blue"></button>
+      <button class="color-btn" style="background: #00cc44;" data-color="#00cc44" title="Green"></button>
+      <button class="color-btn" style="background: #ffcc00;" data-color="#ffcc00" title="Yellow"></button>
+      <button class="color-btn" style="background: #ff6600;" data-color="#ff6600" title="Orange"></button>
+      <button class="color-btn" style="background: #9933ff;" data-color="#9933ff" title="Purple"></button>
+      <button class="color-btn" style="background: #ffffff; border-color: #333;" data-color="#ffffff" title="White"></button>
     </div>
 
+    <button id="add-car" class="btn btn-car" title="Add Car Marker">🚘</button>
+    <button id="toggle-roads" class="btn btn-toggle-roads" title="Toggle Road Labels">🛣️</button>
     <button id="clear-draw" class="btn btn-danger" title="Clear All">🗑️</button>
-    <button id="reset-north" class="btn btn-reset" title="Reset Map Bearing to North">⬆️</button>
+    <button id="reset-north" class="btn btn-reset" title="Reset North">🧭</button>
   </div>
 
   <div id="map"></div>
@@ -169,12 +164,12 @@
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      /* Google Hybrid Tile Layer (Satellite + Roads) */
+      /* Google Maps Hybrid Tile Layer */
       const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2', {
         maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], tileSize: 256, zoomOffset: 0, attribution: '&copy; Google Maps'
       });
 
-      /* Google Satellite Tile Layer (Satellite Only) */
+      /* Google Maps Satellite Only Tile Layer */
       const googleSatOnlyLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&scale=2', {
         maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], tileSize: 256, zoomOffset: 0, attribution: '&copy; Google Maps'
       });
@@ -221,264 +216,4 @@
         }
       }
 
-      searchBtn.addEventListener('click', performSearch);
-      searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-      document.getElementById('locate-me').addEventListener('click', () => {
-        if ('geolocation' in navigator) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              map.setView([pos.coords.latitude, pos.coords.longitude], 18);
-              if (userMarker) map.removeLayer(userMarker);
-              userMarker = L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
-                radius: 9, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 0.9
-              }).addTo(map);
-            },
-            () => alert('Unable to get location.'),
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-          );
-        }
-      });
-
-      const carColors = ['#e63946', '#0066ff', '#2a9d8f', '#e9c46a', '#f4a261', '#9b5de5', '#2b2d42'];
-      let carColorIndex = 0;
-
-      function getTopDownCarHTML(color) {
-        return `
-          <div class="car-container">
-            <div class="rotate-arm"><div class="rotate-handle"></div></div>
-            <div class="car-svg-wrapper">
-              <svg viewBox="0 0 40 70" width="28" height="48" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.7));">
-                <rect x="4" y="2" width="32" height="66" rx="9" fill="${color}" stroke="#111" stroke-width="2"/>
-                <path d="M 8 18 Q 20 12 32 18 L 30 26 Q 20 22 10 26 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
-                <path d="M 10 50 Q 20 53 30 50 L 29 56 Q 20 58 11 56 Z" fill="#1d2d44" opacity="0.95" stroke="#111" stroke-width="1"/>
-                <rect x="9" y="26" width="22" height="24" rx="4" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
-                <rect x="1" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
-                <rect x="36" y="16" width="3" height="6" rx="1" fill="${color}" stroke="#000" stroke-width="0.5"/>
-                <rect x="6" y="3" width="6" height="3" rx="1" fill="${color}"/>
-                <rect x="28" y="3" width="6" height="3" rx="1" fill="${color}"/>
-                <rect x="6" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
-                <rect x="28" y="64" width="6" height="3" rx="1" fill="#ff2222"/>
-              </svg>
-            </div>
-            <div class="car-actions">
-              <button class="action-btn action-btn-drive drive-btn">▶️ Drive</button>
-              <button class="action-btn pin-btn">📌 Pin</button>
-              <button class="action-btn action-btn-delete delete-btn">🗑️</button>
-            </div>
-          </div>`;
-      }
-
-      document.getElementById('add-car').addEventListener('click', () => {
-        const color = carColors[carColorIndex % carColors.length]; carColorIndex++;
-        const customIcon = L.divIcon({ html: getTopDownCarHTML(color), className: 'custom-car-marker', iconSize: [50, 100], iconAnchor: [25, 50] });
-        const car = L.marker(map.getCenter(), { icon: customIcon, draggable: true }).addTo(map);
-        car.carRotation = 0; car.isPinned = false;
-        setTimeout(() => attachCarEvents(car), 100);
-        carMarkers.push(car);
-      });
-
-      function deselectAllCars() {
-        carMarkers.forEach(c => {
-          const el = c.getElement();
-          if (el) { const container = el.querySelector('.car-container'); if (container) container.classList.remove('selected'); }
-        });
-      }
-
-      function removeCar(car) {
-        if (car.animationTimer) clearInterval(car.animationTimer);
-        map.removeLayer(car);
-        carMarkers = carMarkers.filter(c => c !== car);
-      }
-
-      map.on('click', () => deselectAllCars());
-
-      function attachCarEvents(car) {
-        const el = car.getElement(); if (!el) return;
-        const container = el.querySelector('.car-container');
-        const handle = el.querySelector('.rotate-handle');
-        const wrapper = el.querySelector('.car-svg-wrapper');
-        const driveBtn = el.querySelector('.drive-btn');
-        const pinBtn = el.querySelector('.pin-btn');
-        const deleteBtn = el.querySelector('.delete-btn');
-
-        el.addEventListener('click', (e) => { e.stopPropagation(); deselectAllCars(); container.classList.add('selected'); });
-        pinBtn.addEventListener('click', (e) => {
-          e.stopPropagation(); car.isPinned = !car.isPinned;
-          if (car.isPinned) { car.dragging.disable(); container.classList.add('pinned'); pinBtn.innerText = '🔓 Unpin'; }
-          else { car.dragging.enable(); container.classList.remove('pinned'); pinBtn.innerText = '📌 Pin'; }
-        });
-        deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); removeCar(car); });
-        driveBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (car.isDriving) stopCarDrive(car, driveBtn);
-          else startCarDrive(car, driveBtn, wrapper);
-        });
-
-        let isRotating = false;
-        const startRotate = (e) => { if (car.isPinned) return; e.stopPropagation(); e.preventDefault(); isRotating = true; map.dragging.disable(); };
-        const doRotate = (e) => {
-          if (!isRotating) return; e.stopPropagation();
-          const rect = wrapper.getBoundingClientRect();
-          const radians = Math.atan2((e.touches ? e.touches[0].clientX : e.clientX) - (rect.left + rect.width / 2), -((e.touches ? e.touches[0].clientY : e.clientY) - (rect.top + rect.height / 2)));
-          let degrees = Math.round(radians * (180 / Math.PI));
-          car.carRotation = degrees; wrapper.style.transform = `rotate(${degrees}deg)`;
-        };
-        const stopRotate = () => { if (isRotating) { isRotating = false; if (!isDrawingMode && !car.isPinned) map.dragging.enable(); } };
-
-        handle.addEventListener('mousedown', startRotate); handle.addEventListener('touchstart', startRotate);
-        window.addEventListener('mousemove', doRotate); window.addEventListener('touchmove', doRotate);
-        window.addEventListener('mouseup', stopRotate); window.addEventListener('touchend', stopRotate);
-        el.addEventListener('dblclick', (e) => { e.stopPropagation(); removeCar(car); });
-      }
-
-      function startCarDrive(car, driveBtn, wrapper) {
-        if (strokeHistory.length === 0) { alert('Draw a path first!'); return; }
-        const lastStroke = strokeHistory[strokeHistory.length - 1];
-        const path = lastStroke.latLngs;
-        if (!path || path.length < 2) return;
-
-        car.isDriving = true; driveBtn.innerText = '⏹️ Stop';
-        let stepIndex = 0;
-        car.animationTimer = setInterval(() => {
-          if (stepIndex >= path.length) { stopCarDrive(car, driveBtn); return; }
-          const currentPt = path[stepIndex]; car.setLatLng(currentPt);
-          if (stepIndex < path.length - 1) {
-            const nextPt = path[stepIndex + 1];
-            const p1 = map.latLngToContainerPoint(currentPt); const p2 = map.latLngToContainerPoint(nextPt);
-            const degrees = Math.round(Math.atan2(p2.x - p1.x, -(p2.y - p1.y)) * (180 / Math.PI));
-            car.carRotation = degrees; wrapper.style.transform = `rotate(${degrees}deg)`;
-          }
-          stepIndex++;
-        }, 35);
-      }
-
-      function stopCarDrive(car, driveBtn) {
-        car.isDriving = false;
-        if (car.animationTimer) clearInterval(car.animationTimer);
-        if (driveBtn) driveBtn.innerText = '▶️ Drive';
-      }
-
-      document.getElementById('reset-north').addEventListener('click', () => {
-        map.setBearing(0);
-      });
-
-      map.on('rotate', () => redrawAllStrokes());
-      map.on('move', () => redrawAllStrokes());
-
-      const canvas = document.getElementById('draw-canvas');
-      const ctx = canvas.getContext('2d');
-      let isDrawingMode = false; let isPainting = false; let currentColor = 'red';
-
-      function handleResize() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        if (map) map.invalidateSize();
-        redrawAllStrokes();
-      }
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
-      handleResize();
-
-      const drawBtn = document.getElementById('toggle-draw');
-      drawBtn.addEventListener('click', async () => {
-        isDrawingMode = !isDrawingMode;
-        canvas.style.pointerEvents = isDrawingMode ? 'auto' : 'none';
-        drawBtn.classList.toggle('active', isDrawingMode);
-
-        if (isDrawingMode) {
-          deselectAllCars();
-          map.dragging.disable(); map.touchZoom.disable(); map.doubleClickZoom.disable(); map.boxZoom.disable(); map.keyboard.disable();
-          if (map.touchRotate) map.touchRotate.disable();
-          carMarkers.forEach(c => c.dragging.disable());
-        } else {
-          map.dragging.enable(); map.touchZoom.enable(); map.doubleClickZoom.enable(); map.boxZoom.enable(); map.keyboard.enable();
-          if (map.touchRotate) map.touchRotate.enable();
-          carMarkers.forEach(c => { if (!c.isPinned) c.dragging.enable(); });
-        }
-      });
-
-      const activeColorBtn = document.getElementById('active-color-btn');
-      const colorPopover = document.getElementById('color-popover');
-
-      activeColorBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        colorPopover.classList.toggle('open');
-      });
-
-      document.querySelectorAll('.color-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          currentColor = e.target.getAttribute('data-color');
-          activeColorBtn.style.background = currentColor;
-          colorPopover.classList.remove('open');
-        });
-      });
-
-      window.addEventListener('click', () => colorPopover.classList.remove('open'));
-
-      document.getElementById('undo-draw').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (strokeHistory.length > 0) {
-          strokeHistory.pop();
-          redrawAllStrokes();
-        }
-      });
-
-      document.getElementById('clear-draw').addEventListener('click', (e) => {
-        e.stopPropagation();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        carMarkers.forEach(c => removeCar(c));
-        carMarkers = []; strokeHistory = []; carColorIndex = 0;
-      });
-
-      function redrawAllStrokes() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!map) return;
-        strokeHistory.forEach(stroke => {
-          if (!stroke.latLngs || stroke.latLngs.length < 2) return;
-          ctx.lineWidth = stroke.width || 6; ctx.lineCap = 'round'; ctx.strokeStyle = stroke.color; ctx.beginPath();
-          for (let i = 0; i < stroke.latLngs.length; i++) {
-            const pt = map.latLngToContainerPoint(stroke.latLngs[i]);
-            if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-          }
-          ctx.stroke();
-        });
-      }
-
-      function startPosition(e) {
-        if (!isDrawingMode) return;
-        isPainting = true; currentStrokePoints = [];
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-        currentStrokePoints.push(map.containerPointToLatLng([x, y]));
-        ctx.beginPath(); ctx.moveTo(x, y);
-      }
-      
-      function finishedPosition() {
-        if (!isPainting) return;
-        isPainting = false;
-        if (currentStrokePoints.length > 1) {
-          strokeHistory.push({ color: currentColor, width: 6, latLngs: [...currentStrokePoints] });
-        }
-      }
-
-      function draw(e) {
-        if (!isPainting || !isDrawingMode) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-        currentStrokePoints.push(map.containerPointToLatLng([x, y]));
-        ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = currentColor;
-        ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
-      }
-
-      canvas.addEventListener('mousedown', startPosition);
-      canvas.addEventListener('mouseup', finishedPosition);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
-      canvas.addEventListener('touchend', finishedPosition);
-      canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
-    });
-  </script>
-</body>
-</html>
+      searchBtn.addEventListener('click', perform
